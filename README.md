@@ -24,7 +24,7 @@ You can get an API key by registering at [AccuWeather API](https://developer.acc
     "mcpServers": {
         "weather": {
             "command": "uvx",
-            "args": ["--from", "git+https://github.com/adhikasp/mcp-weather.git", "mcp-weather"],
+            "args": ["--from", "git+https://github.com/markuskreitzer/mcp-weather.git", "mcp-weather"],
             "env": {
                 "ACCUWEATHER_API_KEY": "your_api_key_here"
             }
