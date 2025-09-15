@@ -11,7 +11,7 @@ from fastmcp.client.transports import StreamableHttpTransport
 async def test_http_client():
     """Test the HTTP transport client connection."""
     # Create HTTP transport
-    transport = StreamableHttpTransport(url="http://localhost:8080/mcp")
+    transport = StreamableHttpTransport(url="http://localhost:8081/mcp")
     client = Client(transport)
     
     try:
@@ -22,9 +22,9 @@ async def test_http_client():
             tools = await client.list_tools()
             print(f"Available tools: {[tool.name for tool in tools]}")
             
-            # Test weather lookup
+            # Test weather lookup for Huntsville, AL
             result = await client.call_tool("get_hourly_weather", {
-                "location": "San Francisco, CA",
+                "location": "Huntsville, AL",
                 "units": "imperial"
             })
             print(f"Weather result: {result}")
