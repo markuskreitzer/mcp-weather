@@ -1,6 +1,6 @@
 [project]
 name = "mcp-weather"
-version = "0.2.0"
+version = "1.0.0"
 description = "Weather forecast tool for MCP with HTTP streaming support"
 authors = []
 requires-python = ">=3.10"
