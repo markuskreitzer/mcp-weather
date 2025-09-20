@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  mcp-weather:
+    # Use the published image or build locally
+    image: ghcr.io/your-username/mcp-weather:latest
+    # Uncomment below to build locally instead:
+    # build: .
+
+    container_name: mcp-weather
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      # MCP Transport Configuration
+      - MCP_TRANSPORT=http
+      - HOST=0.0.0.0
+      - PORT=8080
+
+      # Weather Source Configuration (choose one)
+      - WEATHER_SOURCE=weathergov  # Default, no API key needed
+      # - WEATHER_SOURCE=accuweather  # Requires API key below
+
+      # AccuWeather API Key (only needed if using AccuWeather)
+      # Get your free API key at: https://developer.accuweather.com/
+      # - ACCUWEATHER_API_KEY=your_api_key_here
+
+      # Logging Configuration
+      - LOG_LEVEL=INFO
+
+    # Health check to ensure the server is running
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Volume for caching weather data
+    volumes:
+      - weather_cache:/app/.cache/weather
+
+    restart: unless-stopped
+
+    # Optional: Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+  # Example MCP client that connects to the weather server
+  # Replace this with your actual MCP client configuration
+  mcp-client:
+    image: your-mcp-client:latest
+    depends_on:
+      mcp-weather:
+        condition: service_healthy
+    environment:
+      # Configure your MCP client to connect via HTTP
+      - MCP_WEATHER_URL=http://mcp-weather:8080
+    restart: unless-stopped
+
+volumes:
+  weather_cache:
+    driver: local
