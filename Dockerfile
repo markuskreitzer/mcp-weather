@@ -43,9 +43,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Expose port for HTTP transport
 EXPOSE 8080
 
-# Health check to ensure the server is running
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
-
-# Run the MCP server
-CMD ["uvicorn", "mcp_weather.weather:mcp.run_server", "--host", "0.0.0.0", "--port", "8080"]
+# Run the MCP server with HTTP transport
+CMD ["python", "-m", "mcp_weather.weather", "--http"]
