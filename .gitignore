@@ -72,5 +72,10 @@ Thumbs.db
 # Logs
 *.log
 
+# Docker
+docker-compose.yml
+docker-compose.override.yml
+.dockerignore
+
 # Claude Code specific
 CLAUDE.md
