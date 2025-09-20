@@ -58,8 +58,10 @@ class WeatherGovClient(WeatherClient):
         # Get current conditions from the first period
         current = periods[0]
         current_temp = current.get("temperature")
-        if units == "imperial":
-            current_temp = (current_temp * 9/5) + 32 if current_temp is not None else None
+        # Weather.gov API already returns temperatures in Fahrenheit, no conversion needed
+        if units == "metric" and current_temp is not None:
+            # Convert FROM Fahrenheit TO Celsius when metric units requested
+            current_temp = (current_temp - 32) * 5/9
 
         current_data = {
             "temperature": {
@@ -76,8 +78,10 @@ class WeatherGovClient(WeatherClient):
         hourly_data = []
         for i, period in enumerate(periods[1:13], 1):
             temp = period.get("temperature")
-            if units == "imperial":
-                temp = (temp * 9/5) + 32 if temp is not None else None
+            # Weather.gov API already returns temperatures in Fahrenheit, no conversion needed
+            if units == "metric" and temp is not None:
+                # Convert FROM Fahrenheit TO Celsius when metric units requested
+                temp = (temp - 32) * 5/9
 
             hourly_data.append({
                 "relative_time": f"+{i} hour{'s' if i > 1 else ''}",
