@@ -1,13 +1,13 @@
-import os
 import logging
-from typing import Dict
-from fastmcp import FastMCP
+import os
+
 from dotenv import load_dotenv
+from fastmcp import FastMCP
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from mcp_weather.clients.base import WeatherClient
 from mcp_weather.clients.accuweather import AccuWeatherClient
+from mcp_weather.clients.base import WeatherClient
 from mcp_weather.clients.weathergov import WeatherGovClient
 
 # Load environment variables
@@ -35,7 +35,7 @@ def get_weather_client() -> WeatherClient:
         raise ValueError(f"Invalid weather source: {source}")
 
 @mcp.tool()
-async def get_hourly_weather(location: str, units: str = "imperial") -> Dict:
+async def get_hourly_weather(location: str, units: str = "imperial") -> dict:
     """Get current weather conditions and 12-hour forecast for a location."""
     client = get_weather_client()
     return await client.get_hourly_weather(location, units)

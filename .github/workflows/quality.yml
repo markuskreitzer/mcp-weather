@@ -1,0 +1,109 @@
+name: Quality Gates
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Code Quality & Linting
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run ruff linting
+        run: uv run ruff check --output-format=github
+
+      - name: Run ruff formatting check
+        run: uv run ruff format --check
+
+      - name: Run dead code detection with vulture
+        run: uv run vulture mcp_weather/ --min-confidence 80
+        continue-on-error: true
+
+      - name: Type checking with mypy
+        run: uv run mypy mcp_weather/
+        continue-on-error: true
+
+  test:
+    runs-on: ubuntu-latest
+    name: Tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run unit tests
+        run: uv run pytest tests/unit/ -v --tb=short
+
+      - name: Run e2e tests
+        run: uv run pytest tests/e2e/ -v --tb=short
+        env:
+          ACCUWEATHER_API_KEY: ${{ secrets.ACCUWEATHER_API_KEY }}
+        continue-on-error: true
+
+  security:
+    runs-on: ubuntu-latest
+    name: Security Scan
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run bandit security linter
+        run: uv run bandit -r mcp_weather/ -f json -o bandit-report.json
+        continue-on-error: true
+
+      - name: Upload bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-security-report
+          path: bandit-report.json
+
+  docker-lint:
+    runs-on: ubuntu-latest
+    name: Docker Lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run hadolint on Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: warning

@@ -1,6 +1,15 @@
-from typing import Dict
+
 from aiohttp import ClientSession
+
+from ..utils import (
+    USER_AGENT,
+    fahrenheit_to_celsius,
+    format_relative_time,
+    format_temperature,
+    validate_weather_params,
+)
 from .base import WeatherClient
+
 
 class WeatherGovClient(WeatherClient):
     """Weather client for Weather.gov API."""
@@ -8,10 +17,10 @@ class WeatherGovClient(WeatherClient):
     def __init__(self):
         self.base_url = "https://api.weather.gov"
 
-    async def _get_lat_lon(self, location: str, session: ClientSession) -> Dict[str, float]:
+    async def _get_lat_lon(self, location: str, session: ClientSession) -> dict[str, float]:
         """Get latitude and longitude for a location using Nominatim."""
         url = f"https://nominatim.openstreetmap.org/search?q={location}&format=json&limit=1"
-        headers = {"User-Agent": "MCP-Weather-Client"} # Nominatim requires a User-Agent
+        headers = {"User-Agent": USER_AGENT}  # Nominatim requires a User-Agent
         async with session.get(url, headers=headers) as response:
             if response.status != 200:
                 raise Exception(f"Error geocoding location '{location}': {response.status}")
@@ -20,13 +29,9 @@ class WeatherGovClient(WeatherClient):
                 raise Exception(f"Location '{location}' not found.")
             return {"lat": float(data[0]["lat"]), "lon": float(data[0]["lon"])}
 
-    async def get_hourly_weather(self, location: str, units: str = "imperial") -> Dict:
+    async def get_hourly_weather(self, location: str, units: str = "imperial") -> dict:
         """Get current weather conditions and 12-hour forecast for a location."""
-        if not location or not location.strip():
-            raise ValueError("Location parameter is required and cannot be empty")
-
-        if units not in ["imperial", "metric"]:
-            raise ValueError("Units must be 'imperial' (Fahrenheit) or 'metric' (Celsius)")
+        validate_weather_params(location, units)
 
         async with ClientSession() as session:
             # Get lat/lon from location string
@@ -34,7 +39,7 @@ class WeatherGovClient(WeatherClient):
 
             # Get gridpoint data from weather.gov
             points_url = f"{self.base_url}/points/{lat_lon['lat']:.4f},{lat_lon['lon']:.4f}"
-            headers = {"User-Agent": "MCP-Weather-Client"}
+            headers = {"User-Agent": USER_AGENT}
             async with session.get(points_url, headers=headers) as response:
                 if response.status != 200:
                     raise Exception(f"Error getting gridpoint data: {response.status}")
@@ -61,13 +66,10 @@ class WeatherGovClient(WeatherClient):
         # Weather.gov API already returns temperatures in Fahrenheit, no conversion needed
         if units == "metric" and current_temp is not None:
             # Convert FROM Fahrenheit TO Celsius when metric units requested
-            current_temp = (current_temp - 32) * 5/9
+            current_temp = fahrenheit_to_celsius(current_temp)
 
         current_data = {
-            "temperature": {
-                "value": round(current_temp) if current_temp is not None else None,
-                "unit": "F" if units == "imperial" else "C"
-            },
+            "temperature": format_temperature(current_temp, units),
             "weather_text": current.get("shortForecast"),
             "relative_humidity": current.get("relativeHumidity"),
             "wind_speed": current.get("windSpeed"),
@@ -81,14 +83,11 @@ class WeatherGovClient(WeatherClient):
             # Weather.gov API already returns temperatures in Fahrenheit, no conversion needed
             if units == "metric" and temp is not None:
                 # Convert FROM Fahrenheit TO Celsius when metric units requested
-                temp = (temp - 32) * 5/9
+                temp = fahrenheit_to_celsius(temp)
 
             hourly_data.append({
-                "relative_time": f"+{i} hour{'s' if i > 1 else ''}",
-                "temperature": {
-                    "value": round(temp) if temp is not None else None,
-                    "unit": "F" if units == "imperial" else "C"
-                },
+                "relative_time": format_relative_time(i),
+                "temperature": format_temperature(temp, units),
                 "weather_text": period.get("shortForecast"),
                 "precipitation_probability": period.get("probabilityOfPrecipitation", {}).get("value", 0),
                 "wind_speed": period.get("windSpeed"),
