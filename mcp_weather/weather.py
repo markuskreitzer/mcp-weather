@@ -3,6 +3,8 @@ import logging
 from typing import Dict
 from fastmcp import FastMCP
 from dotenv import load_dotenv
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from mcp_weather.clients.base import WeatherClient
 from mcp_weather.clients.accuweather import AccuWeatherClient
@@ -50,6 +52,12 @@ async def clear_weather_cache(source: str = "accuweather") -> str:
         return client.clear_cache()
     else:
         return f"Cache clearing not supported for source: {source}"
+
+# Add health endpoint for Docker health checks
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request: Request):
+    """Simple health check endpoint for Docker containers."""
+    return JSONResponse({"status": "healthy", "service": "mcp-weather"})
 
 # Support for running with HTTP transport
 if __name__ == "__main__":

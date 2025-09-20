@@ -14,7 +14,8 @@ RUN uv sync --frozen --no-cache
 
 FROM python:3.11-slim as runtime
 
-# Install uv for runtime
+# Install curl for health checks and uv for runtime
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 # Set working directory
@@ -42,6 +43,10 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Expose port for HTTP transport
 EXPOSE 8080
+
+# Health check using the custom health endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # Run the MCP server with HTTP transport
 CMD ["python", "-m", "mcp_weather.weather", "--http"]
